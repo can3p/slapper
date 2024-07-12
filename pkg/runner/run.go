@@ -96,6 +96,7 @@ type request struct {
 	method string
 	url    string
 	body   []byte
+	header http.Header
 }
 
 func newTargeter(targets string, base64body bool) (*targeter, error) {
@@ -128,6 +129,7 @@ func (trgt *targeter) readTargets(reader io.Reader, base64body bool) error {
 		method string
 		url    string
 		body   []byte
+		header http.Header
 	)
 
 	scanner := bufio.NewScanner(reader)
@@ -154,9 +156,27 @@ func (trgt *targeter) readTargets(reader io.Reader, base64body bool) error {
 		parts := strings.SplitAfterN(line, " ", 2)
 		method = strings.TrimSpace(parts[0])
 		url = strings.TrimSpace(parts[1])
+		header = http.Header{}
 
 		ok := scanner.Scan()
 		line := strings.TrimSpace(scanner.Text())
+
+		for {
+			if !ok {
+				break
+			}
+
+			if !strings.HasPrefix(line, "H ") {
+				break
+			}
+
+			parts := strings.SplitAfterN(line, ":", 2)
+			header.Add(strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1]))
+
+			ok = scanner.Scan()
+			line = strings.TrimSpace(scanner.Text())
+		}
+
 		if !ok {
 			body = []byte{}
 		} else if line == "{}" {
@@ -181,6 +201,7 @@ func (trgt *targeter) readTargets(reader io.Reader, base64body bool) error {
 			method: method,
 			url:    url,
 			body:   body,
+			header: header,
 		})
 	}
 
@@ -205,6 +226,16 @@ func (trgt *targeter) nextRequest() (*http.Request, error) {
 	}
 
 	for key, headers := range trgt.header {
+		for _, header := range headers {
+			if key == "Host" {
+				req.Host = header
+			} else {
+				req.Header.Add(key, header)
+			}
+		}
+	}
+
+	for key, headers := range st.header {
 		for _, header := range headers {
 			if key == "Host" {
 				req.Host = header

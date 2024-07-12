@@ -42,7 +42,10 @@ Usage of ./slapper:
 The targets file is line-based. Its syntax is:
 
 	HTTP_METHOD url
+	H Header: Value
 	$ body
+
+Header lines are optional.
 
 The body line is optional. The rules for what is considered to be a body
 line are:

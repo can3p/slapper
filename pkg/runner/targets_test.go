@@ -165,6 +165,39 @@ $ Zm9v
 			},
 		},
 	},
+
+	{
+		input: `GET http://127.0.0.1:5000/test
+H Content-Type: application/json
+H X-Auth: 124
+$ {"foo": "bar"}
+
+GET http://www.example.com
+H X-Extra: 124
+H X-Extra: 125
+$ {"spam": "eggs"}
+
+`,
+		expected: []request{
+			{
+				method: "GET",
+				url:    "http://127.0.0.1:5000/test",
+				body:   []byte(`{"foo": "bar"}`),
+				header: map[string][]string{
+					"Content-Type": {"application/json"},
+					"X-Auth":       {"124"},
+				},
+			},
+			{
+				method: "GET",
+				url:    "http://www.example.com",
+				body:   []byte(`{"spam": "eggs"}`),
+				header: map[string][]string{
+					"X-Auth": {"124", "125"},
+				},
+			},
+		},
+	},
 }
 
 func TestNewTargeter(t *testing.T) {
