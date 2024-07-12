@@ -1,8 +1,8 @@
-package main
+package runner
 
 import (
-    "bytes"
 	"bufio"
+	"bytes"
 	"strings"
 	"testing"
 )
@@ -14,10 +14,10 @@ type targetTest struct {
 }
 
 var tests = []targetTest{
-	targetTest{
+	{
 		input: `POST http://127.0.0.1:5000/test`,
 		expected: []request{
-			request{
+			{
 				method: "POST",
 				url:    "http://127.0.0.1:5000/test",
 				body:   []byte{},
@@ -25,10 +25,10 @@ var tests = []targetTest{
 		},
 	},
 
-	targetTest{
+	{
 		input: `GET http://127.0.0.1:5000/test`,
 		expected: []request{
-			request{
+			{
 				method: "GET",
 				url:    "http://127.0.0.1:5000/test",
 				body:   []byte{},
@@ -36,16 +36,16 @@ var tests = []targetTest{
 		},
 	},
 
-	targetTest{
+	{
 		input: `GET http://127.0.0.1:5000/test
 GET http://127.0.0.1:5000/test`,
 		expected: []request{
-			request{
+			{
 				method: "GET",
 				url:    "http://127.0.0.1:5000/test",
 				body:   []byte{},
 			},
-			request{
+			{
 				method: "GET",
 				url:    "http://127.0.0.1:5000/test",
 				body:   []byte{},
@@ -53,17 +53,17 @@ GET http://127.0.0.1:5000/test`,
 		},
 	},
 
-	targetTest{
+	{
 		input: `GET http://127.0.0.1:5000/test
 GET http://127.0.0.1:5000/test
 $ {"foo": "bar"}`,
 		expected: []request{
-			request{
+			{
 				method: "GET",
 				url:    "http://127.0.0.1:5000/test",
 				body:   []byte{},
 			},
-			request{
+			{
 				method: "GET",
 				url:    "http://127.0.0.1:5000/test",
 				body:   []byte(`{"foo": "bar"}`),
@@ -71,17 +71,17 @@ $ {"foo": "bar"}`,
 		},
 	},
 
-	targetTest{
+	{
 		input: `GET http://127.0.0.1:5000/test
 $ {"foo": "bar"}
 GET http://127.0.0.1:5000/test`,
 		expected: []request{
-			request{
+			{
 				method: "GET",
 				url:    "http://127.0.0.1:5000/test",
 				body:   []byte(`{"foo": "bar"}`),
 			},
-			request{
+			{
 				method: "GET",
 				url:    "http://127.0.0.1:5000/test",
 				body:   []byte{},
@@ -89,12 +89,12 @@ GET http://127.0.0.1:5000/test`,
 		},
 	},
 
-	targetTest{
+	{
 		input: `GET http://127.0.0.1:5000/test
 {}
 `,
 		expected: []request{
-			request{
+			{
 				method: "GET",
 				url:    "http://127.0.0.1:5000/test",
 				body:   []byte{},
@@ -102,12 +102,12 @@ GET http://127.0.0.1:5000/test`,
 		},
 	},
 
-	targetTest{
+	{
 		input: `GET http://127.0.0.1:5000/test
 $ {"foo": "bar"}
 `,
 		expected: []request{
-			request{
+			{
 				method: "GET",
 				url:    "http://127.0.0.1:5000/test",
 				body:   []byte(`{"foo": "bar"}`),
@@ -115,13 +115,13 @@ $ {"foo": "bar"}
 		},
 	},
 
-	targetTest{
+	{
 		input: `GET http://127.0.0.1:5000/test
 $ {"foo": "bar"}
 
 `,
 		expected: []request{
-			request{
+			{
 				method: "GET",
 				url:    "http://127.0.0.1:5000/test",
 				body:   []byte(`{"foo": "bar"}`),
@@ -129,7 +129,7 @@ $ {"foo": "bar"}
 		},
 	},
 
-	targetTest{
+	{
 		input: `GET http://127.0.0.1:5000/test
 $ {"foo": "bar"}
 
@@ -138,12 +138,12 @@ $ {"spam": "eggs"}
 
 `,
 		expected: []request{
-			request{
+			{
 				method: "GET",
 				url:    "http://127.0.0.1:5000/test",
 				body:   []byte(`{"foo": "bar"}`),
 			},
-			request{
+			{
 				method: "GET",
 				url:    "http://www.example.com",
 				body:   []byte(`{"spam": "eggs"}`),
@@ -151,14 +151,14 @@ $ {"spam": "eggs"}
 		},
 	},
 
-	targetTest{
+	{
 		input: `GET http://127.0.0.1:5000/test
 $ Zm9v
 
 `,
 		base64: true,
 		expected: []request{
-			request{
+			{
 				method: "GET",
 				url:    "http://127.0.0.1:5000/test",
 				body:   []byte(`foo`),

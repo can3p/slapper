@@ -10,23 +10,23 @@ __Simple load testing tool with real-time updated histogram of request timings__
 
 ## Usage
 ```bash
-$ ./slapper -help
+$ ./slapper run --help
 Usage of ./slapper:
   -H value
     	HTTP header 'key: value' set on all requests. Repeat for more than one header.
-  -base64body
+  --base64body
     	Bodies in targets file are base64-encoded
-  -maxY duration
+  --maxY duration
     	max on Y axe (default 100ms)
-  -minY duration
+  --minY duration
     	min on Y axe (default 0ms)
-  -rate uint
+  --rate uint
     	Requests per second (default 50)
-  -targets string
+  --targets string
     	Targets file
-  -timeout duration
+  --timeout duration
     	Requests timeout (default 30s)
-  -workers uint
+  --workers uint
     	Number of workers (default 8)
 
 ```
@@ -52,6 +52,38 @@ line are:
 
 A missing body line is taken to mean an empty request body. Point (2) is there
 for backwards-compatibility.
+
+## Installation
+
+### Install Script
+
+Download `slapper` and install into a local bin directory.
+
+#### MacOS, Linux, WSL
+
+Latest version:
+
+```bash
+curl -L https://raw.githubusercontent.com/can3p/slapper/master/generated/install.sh | sh
+```
+
+Specific version:
+
+```bash
+curl -L https://raw.githubusercontent.com/can3p/slapper/master/generated/install.sh | sh -s 0.0.4
+```
+
+The script will install the binary into `$HOME/bin` folder by default, you can override this by setting
+`$CUSTOM_INSTALL` environment variable
+
+### Manual download
+
+Get the archive that fits your system from the [Releases](https://github.com/can3p/slapper/releases) page and
+extract the binary into a folder that is mentioned in your `$PATH` variable.
+
+## Notes
+
+The project has been scaffolded with the help of [kleiner](https://github.com/can3p/kleiner)
 
 ## Acknowledgement
 * Idea and initial implementation is by @sparky

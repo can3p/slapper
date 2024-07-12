@@ -1,4 +1,4 @@
-package main
+package runner
 
 import (
 	"bufio"
@@ -6,7 +6,6 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"errors"
-	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -498,30 +497,7 @@ func initializeTimingsBucket(buckets uint) {
 	}()
 }
 
-type arrayFlags []string
-
-func (i *arrayFlags) String() string {
-	return fmt.Sprintf("+%v", *i)
-}
-
-func (i *arrayFlags) Set(value string) error {
-	*i = append(*i, value)
-	return nil
-}
-
-var headerFlags arrayFlags
-
-func main() {
-	workers := flag.Uint("workers", 8, "Number of workers")
-	timeout := flag.Duration("timeout", 30*time.Second, "Requests timeout")
-	targets := flag.String("targets", "", "Targets file")
-	base64body := flag.Bool("base64body", false, "Bodies in targets file are base64-encoded")
-	rate := flag.Uint64("rate", 50, "Requests per second")
-	miY := flag.Duration("minY", 0, "min on Y axe (default 0ms)")
-	maY := flag.Duration("maxY", 100*time.Millisecond, "max on Y axe")
-	flag.Var(&headerFlags, "H", "HTTP header 'key: value' set on all requests. Repeat for more than one header.")
-	flag.Parse()
-
+func Run(workers uint, timeout time.Duration, targets string, base64body bool, rate uint64, miY time.Duration, maY time.Duration, headerFlags []string) error {
 	terminalWidth, _ = terminal.Width()
 	terminalHeight, _ = terminal.Height()
 
@@ -536,7 +512,7 @@ func main() {
 		log.Fatal("not enough screen height, min 3 lines required")
 	}
 
-	minY, maxY = float64(*miY/time.Millisecond), float64(*maY/time.Millisecond)
+	minY, maxY = float64(miY/time.Millisecond), float64(maY/time.Millisecond)
 	deltaY := maxY - minY
 	buckets = plotHeight
 	logBase = math.Pow(deltaY, 1/float64(buckets-2))
@@ -545,11 +521,11 @@ func main() {
 	initializeTimingsBucket(buckets)
 
 	quit := make(chan struct{}, 1)
-	ticker, rateChanger := ticker(*rate, quit)
+	ticker, rateChanger := ticker(rate, quit)
 
-	trgt, err := newTargeter(*targets, *base64body)
+	trgt, err := newTargeter(targets, base64body)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	if len(headerFlags) > 0 {
@@ -559,7 +535,7 @@ func main() {
 
 		mimeHeader, err := tp.ReadMIMEHeader()
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		trgt.header = http.Header(mimeHeader)
@@ -567,11 +543,11 @@ func main() {
 
 	// start attackers
 	var wg sync.WaitGroup
-	for i := uint(0); i < *workers; i++ {
+	for i := uint(0); i < workers; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			attack(trgt, *timeout, ticker, quit)
+			attack(trgt, timeout, ticker, quit)
 		}()
 	}
 
@@ -587,4 +563,6 @@ func main() {
 	// bye
 	close(quit)
 	wg.Wait()
+
+	return nil
 }
