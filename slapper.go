@@ -9,7 +9,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"math"
 	"net/http"
@@ -242,7 +241,7 @@ func attack(trgt *targeter, timeout time.Duration, ch <-chan time.Time, quit <-c
 				start := time.Now()
 				response, err := client.Do(request)
 				if err == nil {
-					_, err = ioutil.ReadAll(response.Body)
+					_, err = io.ReadAll(response.Body)
 					response.Body.Close()
 				}
 				now := time.Now()
