@@ -248,9 +248,9 @@ func (trgt *targeter) nextRequest() (*http.Request, error) {
 	return req, err
 }
 
-func attack(trgt *targeter, timeout time.Duration, ch <-chan time.Time, quit <-chan struct{}) {
+func attack(trgt *targeter, timeout time.Duration, disableKeepAlive bool, ch <-chan time.Time, quit <-chan struct{}) {
 	tr := &http.Transport{
-		DisableKeepAlives:   false,
+		DisableKeepAlives:   disableKeepAlive,
 		DisableCompression:  true,
 		MaxIdleConnsPerHost: 100,
 		IdleConnTimeout:     30 * time.Second,
@@ -528,7 +528,7 @@ func initializeTimingsBucket(buckets uint) {
 	}()
 }
 
-func Run(workers uint, timeout time.Duration, targets string, base64body bool, rate uint64, miY time.Duration, maY time.Duration, headerFlags []string) error {
+func Run(workers uint, timeout time.Duration, targets string, base64body bool, rate uint64, miY time.Duration, maY time.Duration, headerFlags []string, disableKeepAlive bool) error {
 	terminalWidth, _ = terminal.Width()
 	terminalHeight, _ = terminal.Height()
 
@@ -578,7 +578,7 @@ func Run(workers uint, timeout time.Duration, targets string, base64body bool, r
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			attack(trgt, timeout, ticker, quit)
+			attack(trgt, timeout, disableKeepAlive, ticker, quit)
 		}()
 	}
 

@@ -58,6 +58,12 @@ func runCommand() *cobra.Command {
 				return err
 			}
 
+			disableKeepAlive, err := cmd.Flags().GetBool("disable-keep-alive")
+
+			if err != nil {
+				return err
+			}
+
 			rate, err := cmd.Flags().GetUint64("rate")
 
 			if err != nil {
@@ -76,7 +82,7 @@ func runCommand() *cobra.Command {
 				return err
 			}
 
-			return runner.Run(workers, timeout, targets, base64body, rate, minY, maxY, headerFlags)
+			return runner.Run(workers, timeout, targets, base64body, rate, minY, maxY, headerFlags, disableKeepAlive)
 		},
 	}
 
@@ -84,6 +90,7 @@ func runCommand() *cobra.Command {
 	out.Flags().Duration("timeout", 30*time.Second, "Requests timeout")
 	out.Flags().String("targets", "", "Targets file")
 	out.Flags().Bool("base64body", false, "Bodies in targets file are base64-encoded")
+	out.Flags().Bool("disable-keep-alive", false, "Disable keep-alive during the test")
 	out.Flags().Uint64("rate", 50, "Requests per second")
 	out.Flags().Duration("minY", 0, "min on Y axe (default 0ms)")
 	out.Flags().Duration("maxY", 100*time.Millisecond, "max on Y axe")
