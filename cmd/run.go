@@ -82,7 +82,40 @@ func runCommand() *cobra.Command {
 				return err
 			}
 
-			return runner.Run(workers, timeout, targets, base64body, rate, minY, maxY, headerFlags, disableKeepAlive)
+			tlsKey, err := cmd.Flags().GetString("tls-key")
+
+			if err != nil {
+				return err
+			}
+
+			tlsCert, err := cmd.Flags().GetString("tls-cert")
+
+			if err != nil {
+				return err
+			}
+
+			caCert, err := cmd.Flags().GetString("ca-cert")
+
+			if err != nil {
+				return err
+			}
+
+			rc := runner.RunnerConfig{
+				Workers:          workers,
+				Timeout:          timeout,
+				Targets:          targets,
+				Base64body:       base64body,
+				Rate:             rate,
+				MiY:              minY,
+				MaY:              maxY,
+				HeaderFlags:      headerFlags,
+				DisableKeepAlive: disableKeepAlive,
+				TlsKey:           tlsKey,
+				TlsCert:          tlsCert,
+				CaCert:           caCert,
+			}
+
+			return runner.Run(rc)
 		},
 	}
 
@@ -95,6 +128,10 @@ func runCommand() *cobra.Command {
 	out.Flags().Duration("minY", 0, "min on Y axe (default 0ms)")
 	out.Flags().Duration("maxY", 100*time.Millisecond, "max on Y axe")
 	out.Flags().VarP(&headerFlags, "header", "H", "HTTP header 'key: value' set on all requests. Repeat for more than one header.")
+
+	out.Flags().String("tls-cert", "", "Client tls certificate")
+	out.Flags().String("tls-key", "", "Client tls key")
+	out.Flags().String("ca-cert", "", "Certificate authority certificate")
 
 	return out
 }

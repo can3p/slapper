@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -248,18 +249,26 @@ func (trgt *targeter) nextRequest() (*http.Request, error) {
 	return req, err
 }
 
-func attack(trgt *targeter, timeout time.Duration, disableKeepAlive bool, ch <-chan time.Time, quit <-chan struct{}) {
+func attack(wc workerConfig, trgt *targeter, ch <-chan time.Time, quit <-chan struct{}) {
 	tr := &http.Transport{
-		DisableKeepAlives:   disableKeepAlive,
+		DisableKeepAlives:   wc.disableKeepAlive,
 		DisableCompression:  true,
 		MaxIdleConnsPerHost: 100,
 		IdleConnTimeout:     30 * time.Second,
 		TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
 	}
 
+	if wc.caCert != nil {
+		tr.TLSClientConfig.RootCAs = wc.caCert.Clone()
+	}
+
+	if wc.tls != nil {
+		tr.TLSClientConfig.Certificates = append(tr.TLSClientConfig.Certificates, *wc.tls)
+	}
+
 	client := &http.Client{
 		Transport: tr,
-		Timeout:   timeout,
+		Timeout:   wc.timeout,
 	}
 
 	for {
@@ -528,7 +537,29 @@ func initializeTimingsBucket(buckets uint) {
 	}()
 }
 
-func Run(workers uint, timeout time.Duration, targets string, base64body bool, rate uint64, miY time.Duration, maY time.Duration, headerFlags []string, disableKeepAlive bool) error {
+type RunnerConfig struct {
+	Workers          uint
+	Timeout          time.Duration
+	Targets          string
+	Base64body       bool
+	Rate             uint64
+	MiY              time.Duration
+	MaY              time.Duration
+	HeaderFlags      []string
+	DisableKeepAlive bool
+	CaCert           string
+	TlsKey           string
+	TlsCert          string
+}
+
+type workerConfig struct {
+	tls              *tls.Certificate
+	caCert           *x509.CertPool
+	timeout          time.Duration
+	disableKeepAlive bool
+}
+
+func Run(rc RunnerConfig) error {
 	terminalWidth, _ = terminal.Width()
 	terminalHeight, _ = terminal.Height()
 
@@ -543,7 +574,7 @@ func Run(workers uint, timeout time.Duration, targets string, base64body bool, r
 		log.Fatal("not enough screen height, min 3 lines required")
 	}
 
-	minY, maxY = float64(miY/time.Millisecond), float64(maY/time.Millisecond)
+	minY, maxY = float64(rc.MiY/time.Millisecond), float64(rc.MaY/time.Millisecond)
 	deltaY := maxY - minY
 	buckets = plotHeight
 	logBase = math.Pow(deltaY, 1/float64(buckets-2))
@@ -552,15 +583,15 @@ func Run(workers uint, timeout time.Duration, targets string, base64body bool, r
 	initializeTimingsBucket(buckets)
 
 	quit := make(chan struct{}, 1)
-	ticker, rateChanger := ticker(rate, quit)
+	ticker, rateChanger := ticker(rc.Rate, quit)
 
-	trgt, err := newTargeter(targets, base64body)
+	trgt, err := newTargeter(rc.Targets, rc.Base64body)
 	if err != nil {
 		return err
 	}
 
-	if len(headerFlags) > 0 {
-		headers := strings.Join(headerFlags, "\r\n")
+	if len(rc.HeaderFlags) > 0 {
+		headers := strings.Join(rc.HeaderFlags, "\r\n")
 		headers += "\r\n\r\n"                                                  // Need an extra \r\n at the end
 		tp := textproto.NewReader(bufio.NewReader(strings.NewReader(headers))) // Never change, Go
 
@@ -572,13 +603,39 @@ func Run(workers uint, timeout time.Duration, targets string, base64body bool, r
 		trgt.header = http.Header(mimeHeader)
 	}
 
+	wc := workerConfig{
+		disableKeepAlive: rc.DisableKeepAlive,
+		timeout:          rc.Timeout,
+	}
+
+	if rc.CaCert != "" {
+		cert, err := os.ReadFile(rc.CaCert)
+
+		if err != nil {
+			return fmt.Errorf("Failed to read ca cert: %w", err)
+		}
+
+		caCertPool := x509.NewCertPool()
+		caCertPool.AppendCertsFromPEM(cert)
+		wc.caCert = caCertPool
+	}
+
+	if rc.TlsKey != "" {
+		cert, err := tls.LoadX509KeyPair(rc.TlsCert, rc.TlsKey)
+		if err != nil {
+			return fmt.Errorf("Failed to read tls certificates: %s", err)
+		}
+
+		wc.tls = &cert
+	}
+
 	// start attackers
 	var wg sync.WaitGroup
-	for i := uint(0); i < workers; i++ {
+	for i := uint(0); i < rc.Workers; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			attack(trgt, timeout, disableKeepAlive, ticker, quit)
+			attack(wc, trgt, ticker, quit)
 		}()
 	}
 
