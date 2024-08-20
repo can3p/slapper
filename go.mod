@@ -4,6 +4,8 @@ go 1.22.0
 
 require (
 	github.com/can3p/kleiner v0.0.12
+	github.com/jessevdk/go-flags v1.6.1
+	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/nsf/termbox-go v1.1.1
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.8.1
@@ -19,8 +21,6 @@ require (
 	github.com/google/go-github/v57 v57.0.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/jessevdk/go-flags v1.6.1 // indirect
-	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
