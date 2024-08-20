@@ -19,6 +19,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/can3p/slapper/pkg/requests"
+	"github.com/can3p/slapper/pkg/requests/curl"
 	term "github.com/nsf/termbox-go"
 	terminal "github.com/wayneashleyberry/terminal-dimensions"
 )
@@ -89,15 +91,8 @@ func (c *counter) Store(v int64)     { atomic.StoreInt64((*int64)(c), v) }
 
 type targeter struct {
 	idx      counter
-	requests []request
+	requests []requests.Request
 	header   http.Header
-}
-
-type request struct {
-	method string
-	url    string
-	body   []byte
-	header http.Header
 }
 
 func newTargeter(targets string, base64body bool) (*targeter, error) {
@@ -154,6 +149,32 @@ func (trgt *targeter) readTargets(reader io.Reader, base64body bool) error {
 			continue
 		}
 
+		// XXX: format dispatch should probably go to requests package later
+		if curl.IsCurl(line) {
+			var cmd bytes.Buffer
+
+			for strings.HasSuffix(line, "\\") {
+				cmd.WriteString(strings.TrimRight(line, "\\"))
+
+				if !scanner.Scan() {
+					break
+				}
+
+				line = strings.TrimSpace(scanner.Text())
+			}
+
+			cmd.WriteString(line)
+
+			r, err := curl.ParseCommand(cmd.String())
+
+			if err != nil {
+				return err
+			}
+
+			trgt.requests = append(trgt.requests, *r)
+			continue
+		}
+
 		parts := strings.SplitAfterN(line, " ", 2)
 		method = strings.TrimSpace(parts[0])
 		url = strings.TrimSpace(parts[1])
@@ -198,11 +219,11 @@ func (trgt *targeter) readTargets(reader io.Reader, base64body bool) error {
 			}
 		}
 
-		trgt.requests = append(trgt.requests, request{
-			method: method,
-			url:    url,
-			body:   body,
-			header: header,
+		trgt.requests = append(trgt.requests, requests.Request{
+			Method: method,
+			Url:    url,
+			Body:   body,
+			Header: header,
 		})
 	}
 
@@ -218,9 +239,9 @@ func (trgt *targeter) nextRequest() (*http.Request, error) {
 	st := trgt.requests[idx%len(trgt.requests)]
 
 	req, err := http.NewRequest(
-		st.method,
-		st.url,
-		bytes.NewReader(st.body),
+		st.Method,
+		st.Url,
+		bytes.NewReader(st.Body),
 	)
 	if err != nil {
 		return req, err
@@ -236,7 +257,7 @@ func (trgt *targeter) nextRequest() (*http.Request, error) {
 		}
 	}
 
-	for key, headers := range st.header {
+	for key, headers := range st.Header {
 		for _, header := range headers {
 			if key == "Host" {
 				req.Host = header

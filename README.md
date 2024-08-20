@@ -13,6 +13,7 @@ __Simple load testing tool with real-time updated histogram of request timings__
 * Just one binary, easy to put anywhere and start testing
 * Simple request format
 * mTLS support
+* Experimental support for curl as a target format!
 
 ## Usage
 
@@ -63,6 +64,30 @@ line are:
 
 A missing body line is taken to mean an empty request body. Point (2) is there
 for backwards-compatibility.
+
+## Curl as target format
+
+Custom target formats have one big drawback: it's not trivial to convert them
+into something that can be run by a human easily and that's very handy especially
+in case requests misbehave.
+
+Slapper provides an option to specify curl commands as options as a bridge between
+human and computer. Just a subset of possible arguments is supported now (`-H`, `-X` and `--data-raw` flags (no file support)).
+You could specify your target like this:
+
+```
+curl -v -X HTTP_METHOD -H'Header: Value' --data-raw 'body'
+```
+
+Basic escaping works too, which should help with copy/paste:
+
+```
+curl \
+    -v \
+    -X HTTP_METHOD \
+    -H'Header: Value' \
+    --data-raw 'body'
+```
 
 ## Installation
 

@@ -5,33 +5,35 @@ import (
 	"bytes"
 	"strings"
 	"testing"
+
+	"github.com/can3p/slapper/pkg/requests"
 )
 
 type targetTest struct {
 	input    string
 	base64   bool
-	expected []request
+	expected []requests.Request
 }
 
 var tests = []targetTest{
 	{
 		input: `POST http://127.0.0.1:5000/test`,
-		expected: []request{
+		expected: []requests.Request{
 			{
-				method: "POST",
-				url:    "http://127.0.0.1:5000/test",
-				body:   []byte{},
+				Method: "POST",
+				Url:    "http://127.0.0.1:5000/test",
+				Body:   []byte{},
 			},
 		},
 	},
 
 	{
 		input: `GET http://127.0.0.1:5000/test`,
-		expected: []request{
+		expected: []requests.Request{
 			{
-				method: "GET",
-				url:    "http://127.0.0.1:5000/test",
-				body:   []byte{},
+				Method: "GET",
+				Url:    "http://127.0.0.1:5000/test",
+				Body:   []byte{},
 			},
 		},
 	},
@@ -39,16 +41,16 @@ var tests = []targetTest{
 	{
 		input: `GET http://127.0.0.1:5000/test
 GET http://127.0.0.1:5000/test`,
-		expected: []request{
+		expected: []requests.Request{
 			{
-				method: "GET",
-				url:    "http://127.0.0.1:5000/test",
-				body:   []byte{},
+				Method: "GET",
+				Url:    "http://127.0.0.1:5000/test",
+				Body:   []byte{},
 			},
 			{
-				method: "GET",
-				url:    "http://127.0.0.1:5000/test",
-				body:   []byte{},
+				Method: "GET",
+				Url:    "http://127.0.0.1:5000/test",
+				Body:   []byte{},
 			},
 		},
 	},
@@ -57,16 +59,16 @@ GET http://127.0.0.1:5000/test`,
 		input: `GET http://127.0.0.1:5000/test
 GET http://127.0.0.1:5000/test
 $ {"foo": "bar"}`,
-		expected: []request{
+		expected: []requests.Request{
 			{
-				method: "GET",
-				url:    "http://127.0.0.1:5000/test",
-				body:   []byte{},
+				Method: "GET",
+				Url:    "http://127.0.0.1:5000/test",
+				Body:   []byte{},
 			},
 			{
-				method: "GET",
-				url:    "http://127.0.0.1:5000/test",
-				body:   []byte(`{"foo": "bar"}`),
+				Method: "GET",
+				Url:    "http://127.0.0.1:5000/test",
+				Body:   []byte(`{"foo": "bar"}`),
 			},
 		},
 	},
@@ -75,16 +77,16 @@ $ {"foo": "bar"}`,
 		input: `GET http://127.0.0.1:5000/test
 $ {"foo": "bar"}
 GET http://127.0.0.1:5000/test`,
-		expected: []request{
+		expected: []requests.Request{
 			{
-				method: "GET",
-				url:    "http://127.0.0.1:5000/test",
-				body:   []byte(`{"foo": "bar"}`),
+				Method: "GET",
+				Url:    "http://127.0.0.1:5000/test",
+				Body:   []byte(`{"foo": "bar"}`),
 			},
 			{
-				method: "GET",
-				url:    "http://127.0.0.1:5000/test",
-				body:   []byte{},
+				Method: "GET",
+				Url:    "http://127.0.0.1:5000/test",
+				Body:   []byte{},
 			},
 		},
 	},
@@ -93,11 +95,11 @@ GET http://127.0.0.1:5000/test`,
 		input: `GET http://127.0.0.1:5000/test
 {}
 `,
-		expected: []request{
+		expected: []requests.Request{
 			{
-				method: "GET",
-				url:    "http://127.0.0.1:5000/test",
-				body:   []byte{},
+				Method: "GET",
+				Url:    "http://127.0.0.1:5000/test",
+				Body:   []byte{},
 			},
 		},
 	},
@@ -106,11 +108,11 @@ GET http://127.0.0.1:5000/test`,
 		input: `GET http://127.0.0.1:5000/test
 $ {"foo": "bar"}
 `,
-		expected: []request{
+		expected: []requests.Request{
 			{
-				method: "GET",
-				url:    "http://127.0.0.1:5000/test",
-				body:   []byte(`{"foo": "bar"}`),
+				Method: "GET",
+				Url:    "http://127.0.0.1:5000/test",
+				Body:   []byte(`{"foo": "bar"}`),
 			},
 		},
 	},
@@ -120,11 +122,11 @@ $ {"foo": "bar"}
 $ {"foo": "bar"}
 
 `,
-		expected: []request{
+		expected: []requests.Request{
 			{
-				method: "GET",
-				url:    "http://127.0.0.1:5000/test",
-				body:   []byte(`{"foo": "bar"}`),
+				Method: "GET",
+				Url:    "http://127.0.0.1:5000/test",
+				Body:   []byte(`{"foo": "bar"}`),
 			},
 		},
 	},
@@ -137,16 +139,16 @@ GET http://www.example.com
 $ {"spam": "eggs"}
 
 `,
-		expected: []request{
+		expected: []requests.Request{
 			{
-				method: "GET",
-				url:    "http://127.0.0.1:5000/test",
-				body:   []byte(`{"foo": "bar"}`),
+				Method: "GET",
+				Url:    "http://127.0.0.1:5000/test",
+				Body:   []byte(`{"foo": "bar"}`),
 			},
 			{
-				method: "GET",
-				url:    "http://www.example.com",
-				body:   []byte(`{"spam": "eggs"}`),
+				Method: "GET",
+				Url:    "http://www.example.com",
+				Body:   []byte(`{"spam": "eggs"}`),
 			},
 		},
 	},
@@ -157,11 +159,11 @@ $ Zm9v
 
 `,
 		base64: true,
-		expected: []request{
+		expected: []requests.Request{
 			{
-				method: "GET",
-				url:    "http://127.0.0.1:5000/test",
-				body:   []byte(`foo`),
+				Method: "GET",
+				Url:    "http://127.0.0.1:5000/test",
+				Body:   []byte(`foo`),
 			},
 		},
 	},
@@ -178,21 +180,85 @@ H X-Extra: 125
 $ {"spam": "eggs"}
 
 `,
-		expected: []request{
+		expected: []requests.Request{
 			{
-				method: "GET",
-				url:    "http://127.0.0.1:5000/test",
-				body:   []byte(`{"foo": "bar"}`),
-				header: map[string][]string{
+				Method: "GET",
+				Url:    "http://127.0.0.1:5000/test",
+				Body:   []byte(`{"foo": "bar"}`),
+				Header: map[string][]string{
 					"Content-Type": {"application/json"},
 					"X-Auth":       {"124"},
 				},
 			},
 			{
-				method: "GET",
-				url:    "http://www.example.com",
-				body:   []byte(`{"spam": "eggs"}`),
-				header: map[string][]string{
+				Method: "GET",
+				Url:    "http://www.example.com",
+				Body:   []byte(`{"spam": "eggs"}`),
+				Header: map[string][]string{
+					"X-Auth": {"124", "125"},
+				},
+			},
+		},
+	},
+
+	{
+		input: `GET http://127.0.0.1:5000/test
+H Content-Type: application/json
+H X-Auth: 124
+$ {"foo": "bar"}
+
+curl http://www.example.com -X GET -H 'X-Extra: 124' -H 'X-Extra: 125' --data-raw='{"spam": "eggs"}'
+
+`,
+		expected: []requests.Request{
+			{
+				Method: "GET",
+				Url:    "http://127.0.0.1:5000/test",
+				Body:   []byte(`{"foo": "bar"}`),
+				Header: map[string][]string{
+					"Content-Type": {"application/json"},
+					"X-Auth":       {"124"},
+				},
+			},
+			{
+				Method: "GET",
+				Url:    "http://www.example.com",
+				Body:   []byte(`{"spam": "eggs"}`),
+				Header: map[string][]string{
+					"X-Auth": {"124", "125"},
+				},
+			},
+		},
+	},
+
+	{
+		input: `GET http://127.0.0.1:5000/test
+H Content-Type: application/json
+H X-Auth: 124
+$ {"foo": "bar"}
+
+curl http://www.example.com \
+    -X GET \
+    -H 'X-Extra: 124' \
+    -H 'X-Extra: 125' \
+    --data-raw='{"spam": "eggs"}'
+
+`,
+		expected: []requests.Request{
+			{
+				Method: "GET",
+				Url:    "http://127.0.0.1:5000/test",
+				Body:   []byte(`{"foo": "bar"}`),
+				Header: map[string][]string{
+					"Content-Type": {"application/json"},
+					"X-Auth":       {"124"},
+				},
+			},
+			{
+				Method: "GET",
+				Url:    "http://www.example.com",
+				Body:   []byte(`{"spam": "eggs"}`),
+				Header: map[string][]string{
 					"X-Auth": {"124", "125"},
 				},
 			},
@@ -203,13 +269,13 @@ $ {"spam": "eggs"}
 func TestNewTargeter(t *testing.T) {
 	failed := 0
 
-	for _, test := range tests {
+	for idx, test := range tests {
 		r := bufio.NewReader(strings.NewReader(test.input))
 
 		trgt := targeter{}
 		err := trgt.readTargets(r, test.base64)
 		if err != nil {
-			t.Error(err)
+			t.Errorf("[%d] Unexpected error: %v", idx+1, err)
 			failed++
 			continue
 		}
@@ -222,22 +288,22 @@ func TestNewTargeter(t *testing.T) {
 		}
 
 		for req := 0; req < len(trgt.requests); req++ {
-			if test.expected[req].method != trgt.requests[req].method {
-				t.Errorf("Expected method '%s', got '%s'", test.expected[req].method, trgt.requests[req].method)
+			if test.expected[req].Method != trgt.requests[req].Method {
+				t.Errorf("[%d/%d] Expected method '%s', got '%s'", idx+1, req+1, test.expected[req].Method, trgt.requests[req].Method)
 				failed++
 				break
 			}
 
-			if test.expected[req].url != trgt.requests[req].url {
-				t.Errorf("Expected URL '%s', got '%s'", test.expected[req].url, trgt.requests[req].url)
+			if test.expected[req].Url != trgt.requests[req].Url {
+				t.Errorf("[%d/%d] Expected URL '%s', got '%s'", idx+1, req+1, test.expected[req].Url, trgt.requests[req].Url)
 				failed++
 				break
 			}
 
-			if !bytes.Equal(test.expected[req].body, trgt.requests[req].body) {
+			if !bytes.Equal(test.expected[req].Body, trgt.requests[req].Body) {
 				t.Errorf(`Bad request body
 Expected	%+v
-Got		%+v"`, test.expected[req].body, trgt.requests[req].body)
+Got		%+v"`, test.expected[req].Body, trgt.requests[req].Body)
 				failed++
 				break
 			}
