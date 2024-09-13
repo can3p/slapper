@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/can3p/slapper/pkg/requests"
+	"github.com/stretchr/testify/assert"
 )
 
 type targetTest struct {
@@ -23,6 +24,7 @@ var tests = []targetTest{
 				Method: "POST",
 				Url:    "http://127.0.0.1:5000/test",
 				Body:   []byte{},
+				Header: map[string][]string{},
 			},
 		},
 	},
@@ -34,6 +36,7 @@ var tests = []targetTest{
 				Method: "GET",
 				Url:    "http://127.0.0.1:5000/test",
 				Body:   []byte{},
+				Header: map[string][]string{},
 			},
 		},
 	},
@@ -46,11 +49,13 @@ GET http://127.0.0.1:5000/test`,
 				Method: "GET",
 				Url:    "http://127.0.0.1:5000/test",
 				Body:   []byte{},
+				Header: map[string][]string{},
 			},
 			{
 				Method: "GET",
 				Url:    "http://127.0.0.1:5000/test",
 				Body:   []byte{},
+				Header: map[string][]string{},
 			},
 		},
 	},
@@ -64,11 +69,13 @@ $ {"foo": "bar"}`,
 				Method: "GET",
 				Url:    "http://127.0.0.1:5000/test",
 				Body:   []byte{},
+				Header: map[string][]string{},
 			},
 			{
 				Method: "GET",
 				Url:    "http://127.0.0.1:5000/test",
 				Body:   []byte(`{"foo": "bar"}`),
+				Header: map[string][]string{},
 			},
 		},
 	},
@@ -82,11 +89,13 @@ GET http://127.0.0.1:5000/test`,
 				Method: "GET",
 				Url:    "http://127.0.0.1:5000/test",
 				Body:   []byte(`{"foo": "bar"}`),
+				Header: map[string][]string{},
 			},
 			{
 				Method: "GET",
 				Url:    "http://127.0.0.1:5000/test",
 				Body:   []byte{},
+				Header: map[string][]string{},
 			},
 		},
 	},
@@ -100,6 +109,7 @@ GET http://127.0.0.1:5000/test`,
 				Method: "GET",
 				Url:    "http://127.0.0.1:5000/test",
 				Body:   []byte{},
+				Header: map[string][]string{},
 			},
 		},
 	},
@@ -113,6 +123,7 @@ $ {"foo": "bar"}
 				Method: "GET",
 				Url:    "http://127.0.0.1:5000/test",
 				Body:   []byte(`{"foo": "bar"}`),
+				Header: map[string][]string{},
 			},
 		},
 	},
@@ -127,6 +138,7 @@ $ {"foo": "bar"}
 				Method: "GET",
 				Url:    "http://127.0.0.1:5000/test",
 				Body:   []byte(`{"foo": "bar"}`),
+				Header: map[string][]string{},
 			},
 		},
 	},
@@ -144,11 +156,13 @@ $ {"spam": "eggs"}
 				Method: "GET",
 				Url:    "http://127.0.0.1:5000/test",
 				Body:   []byte(`{"foo": "bar"}`),
+				Header: map[string][]string{},
 			},
 			{
 				Method: "GET",
 				Url:    "http://www.example.com",
 				Body:   []byte(`{"spam": "eggs"}`),
+				Header: map[string][]string{},
 			},
 		},
 	},
@@ -164,6 +178,7 @@ $ Zm9v
 				Method: "GET",
 				Url:    "http://127.0.0.1:5000/test",
 				Body:   []byte(`foo`),
+				Header: map[string][]string{},
 			},
 		},
 	},
@@ -195,7 +210,7 @@ $ {"spam": "eggs"}
 				Url:    "http://www.example.com",
 				Body:   []byte(`{"spam": "eggs"}`),
 				Header: map[string][]string{
-					"X-Auth": {"124", "125"},
+					"X-Extra": {"124", "125"},
 				},
 			},
 		},
@@ -225,7 +240,7 @@ curl http://www.example.com -X GET -H 'X-Extra: 124' -H 'X-Extra: 125' --data-ra
 				Url:    "http://www.example.com",
 				Body:   []byte(`{"spam": "eggs"}`),
 				Header: map[string][]string{
-					"X-Auth": {"124", "125"},
+					"X-Extra": {"124", "125"},
 				},
 			},
 		},
@@ -259,7 +274,7 @@ curl http://www.example.com \
 				Url:    "http://www.example.com",
 				Body:   []byte(`{"spam": "eggs"}`),
 				Header: map[string][]string{
-					"X-Auth": {"124", "125"},
+					"X-Extra": {"124", "125"},
 				},
 			},
 		},
@@ -296,6 +311,11 @@ func TestNewTargeter(t *testing.T) {
 
 			if test.expected[req].Url != trgt.requests[req].Url {
 				t.Errorf("[%d/%d] Expected URL '%s', got '%s'", idx+1, req+1, test.expected[req].Url, trgt.requests[req].Url)
+				failed++
+				break
+			}
+
+			if !assert.Equalf(t, test.expected[req].Header, trgt.requests[req].Header, "[%d/%d] ", idx+1, req+1) {
 				failed++
 				break
 			}

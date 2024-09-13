@@ -192,7 +192,8 @@ func (trgt *targeter) readTargets(reader io.Reader, base64body bool) error {
 				break
 			}
 
-			parts := strings.SplitAfterN(line, ":", 2)
+			line = strings.TrimPrefix(line, "H ")
+			parts := strings.SplitN(line, ":", 2)
 			header.Add(strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1]))
 
 			ok = scanner.Scan()
